@@ -22,6 +22,8 @@ jobs:
     # 1. Checkout your forked YSCE repository
     - name: Checkout YSCE
       uses: actions/checkout@v4
+      with:
+        submodules: recursive
 
     # 2. Checkout the public library into the expected directory structure
     - name: Checkout Public Repository
@@ -30,7 +32,7 @@ jobs:
         repository: 'YSCEDC/ysce_public'
         path: 'ysce_public'
 
-    # 3. Setup and run vcpkg (Added explicit environment variables)
+    # 3. Setup and run vcpkg
     - name: Run vcpkg
       uses: lukka/run-vcpkg@v11
       with:
@@ -40,12 +42,15 @@ jobs:
         ACTIONS_RUNTIME_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         ACTIONS_CACHE_URL: ${{ github.api_url }}/_apis/artifactcache/
 
-    # 4. Configure CMake using vcpkg toolchain variables
+    # 4. Configure CMake
     - name: Configure CMake
       run: |
         cmake -B ci_windows -S src `
           -DCMAKE_BUILD_TYPE=Release `
           -DCMAKE_TOOLCHAIN_FILE="${{ github.workspace }}/vcpkg/scripts/buildsystems/vcpkg.cmake"
+      env:
+        ACTIONS_RUNTIME_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        ACTIONS_CACHE_URL: ${{ github.api_url }}/_apis/artifactcache/
 
     # 5. Compile selected targets
     - name: Build Targets
@@ -59,6 +64,7 @@ jobs:
         name: ys-build-windows
         path: ./ci_windows/main/Release
         retention-days: 14
+
         
 
   build-linux:
