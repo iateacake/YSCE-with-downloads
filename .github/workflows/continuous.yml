@@ -5,37 +5,47 @@ on:
   push:
     branches: [ master ]
     tags-ignore:
-      - 'v*' # Don't run if tagged as v*.
+      - 'v*'
   pull_request:
     branches: [ master ]
 
 jobs:
   build-windows:
-
     runs-on: windows-latest
 
     steps:
-    - uses: actions/checkout@v4
-    - name: run-vcpkg
+    # 1. Checkout your forked YSCE repository
+    - name: Checkout YSCE
+      uses: actions/checkout@v4
+
+    # 2. Checkout the public library into the expected directory structure
+    - name: Checkout Public Repository
+      uses: actions/checkout@v4
+      with:
+        repository: 'YSCEDC/ysce_public'
+        path: 'ysce_public'
+
+    # 3. Setup and run vcpkg (handles binary caching and manifests)
+    - name: Run vcpkg
       uses: lukka/run-vcpkg@v11
       with:
-        vcpkgJsonGlob: ../src/vcpkg.json,
         vcpkgGitCommitId: 5b1214315250939257ef5d62ecdcbca18cf4fb1c
-    - name: Install dependencies
-      run: vcpkg install --triplet x64-windows
-      working-directory: src
-    - name: checkout_public
-      run: git clone https://github.com/YSCEDC/ysce_public.git
-    - name: mkdir
-      run: mkdir ci_windows
-    - name: cmake
-      run: cmake ../src -DCMAKE_PREFIX_PATH=D:/a/YSCE/YSCE/vcpkg/installed/x64-windows -DCMAKE_TOOLCHAIN_FILE=D:/a/YSCE/YSCE/vcpkg/scripts/buildsystems/vcpkg.cmake
-      working-directory: ./ci_windows
-    - name: build
-      run: cmake --build . --config Release --parallel --target ysflight64_gl1 ysflight64_gl2 ysflight64_gl1demo ysflight64_gl2demo ysflight64_nownd
-      # Cannot build ysflight64_d3d9 in github workflow because the virtual machine does not have DirectX9 libraries.
-      working-directory: ./ci_windows
-    - uses: actions/upload-artifact@v4
+
+    # 4. Configure CMake using vcpkg toolchain variables
+    - name: Configure CMake
+      run: |
+        cmake -B ci_windows -S src `
+          -DCMAKE_BUILD_TYPE=Release `
+          -DCMAKE_TOOLCHAIN_FILE="${{ github.workspace }}/vcpkg/scripts/buildsystems/vcpkg.cmake"
+
+    # 5. Compile selected targets
+    - name: Build Targets
+      run: |
+        cmake --build ci_windows --config Release --parallel --target ysflight64_gl1 ysflight64_gl2 ysflight64_gl1demo ysflight64_gl2demo ysflight64_nownd
+
+    # 6. Upload Artifacts
+    - name: Upload Artifacts
+      uses: actions/upload-artifact@v4
       with:
         name: ys-build-windows
         path: ./ci_windows/main/Release
