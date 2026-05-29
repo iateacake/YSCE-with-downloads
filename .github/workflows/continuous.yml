@@ -37,7 +37,7 @@ jobs:
       uses: lukka/run-vcpkg@v11
       with:
         vcpkgJsonGlob: '**/src/vcpkg.json'
-        vcpkgGitCommitId: ac9dd9d6e8e0b1234567890abcdef1234567890
+        vcpkgGitCommitId: c0948694cceff995e5cf90b751e0c5a95d613458
       env:
         ACTIONS_RUNTIME_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         ACTIONS_CACHE_URL: ${{ github.api_url }}/_apis/artifactcache/
