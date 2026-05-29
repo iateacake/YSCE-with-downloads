@@ -9,6 +9,11 @@ on:
   pull_request:
     branches: [ master ]
 
+# Added top-level permissions block for GitHub Actions cache access
+permissions:
+  contents: read
+  actions: write
+
 jobs:
   build-windows:
     runs-on: windows-latest
@@ -25,12 +30,15 @@ jobs:
         repository: 'YSCEDC/ysce_public'
         path: 'ysce_public'
 
-    # 3. Setup and run vcpkg (Crucial: Added vcpkgJsonGlob back)
+    # 3. Setup and run vcpkg (Added explicit environment variables)
     - name: Run vcpkg
       uses: lukka/run-vcpkg@v11
       with:
         vcpkgJsonGlob: '**/src/vcpkg.json'
         vcpkgGitCommitId: 5b1214315250939257ef5d62ecdcbca18cf4fb1c
+      env:
+        ACTIONS_RUNTIME_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        ACTIONS_CACHE_URL: ${{ github.api_url }}/_apis/artifactcache/
 
     # 4. Configure CMake using vcpkg toolchain variables
     - name: Configure CMake
@@ -54,7 +62,6 @@ jobs:
         
 
   build-linux:
-
     runs-on: ubuntu-latest
 
     steps:
@@ -65,6 +72,10 @@ jobs:
       with:
         vcpkgArguments: --triplet x64-linux
         vcpkgGitCommitId: 5b1214315250939257ef5d62ecdcbca18cf4fb1c
+      env:
+        ACTIONS_RUNTIME_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        ACTIONS_CACHE_URL: ${{ github.api_url }}/_apis/artifactcache/
+
     - name: Install dependencies
       run: vcpkg install --triplet x64-linux
       working-directory: src
@@ -93,4 +104,3 @@ jobs:
         name: ys-build-linux
         path: ./ci_ubuntu/main/
         retention-days: 14
-# MacOS was here, but Nodoka kicked it off a short pier.
